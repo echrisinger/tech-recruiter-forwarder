@@ -8,7 +8,7 @@ from __future__ import annotations
 import base64
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from email import message_from_bytes
 from email.message import EmailMessage
 from pathlib import Path
@@ -52,8 +52,12 @@ def get_service(credentials_path: Path, token_path: Path):
         else:
             flow = InstalledAppFlow.from_client_secrets_file(str(credentials_path), SCOPES)
             creds = flow.run_local_server(port=0)
-        token_path.write_text(creds.to_json())
-        token_path.chmod(0o600)
+        # Atomic write: a torn write to gmail_token.json crashes every subsequent
+        # run with a JSON parse error. Write to a sibling tempfile and rename.
+        tmp = token_path.parent / (token_path.name + ".tmp")
+        tmp.write_text(creds.to_json())
+        tmp.chmod(0o600)
+        tmp.replace(token_path)
 
     return build("gmail", "v1", credentials=creds, cache_discovery=False)
 
@@ -119,11 +123,13 @@ def _decode_body(payload: dict) -> str:
                 return found
         return ""
 
+    # Whitespace-only text/plain parts are common in marketing emails (a single
+    # tracking-pixel line, etc.); fall through to HTML if plain has no real content.
     plain = find(payload, "text/plain")
-    if plain:
+    if plain.strip():
         return plain
     html = find(payload, "text/html")
-    if html:
+    if html.strip():
         return BeautifulSoup(html, "html.parser").get_text(separator=" ", strip=True)
     return ""
 
