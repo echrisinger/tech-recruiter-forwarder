@@ -160,3 +160,38 @@ def add_label(service, message_id: str, label_id: str) -> None:
     service.users().messages().modify(
         userId="me", id=message_id, body={"addLabelIds": [label_id]}
     ).execute()
+
+
+def forward(
+    service,
+    msg: ParsedMessage,
+    to: list[str],
+    subject_prefix: str = "",
+) -> None:
+    """Forward `msg` to `to` as a new RFC 5322 message.
+
+    Preserves the original headers and body inside a standard 'Forwarded message' block.
+    """
+    original = message_from_bytes(msg.raw_bytes)
+
+    fwd = EmailMessage()
+    fwd["To"] = ", ".join(to)
+    base_subject = msg.subject or "(no subject)"
+    if not base_subject.lower().startswith(("fwd:", "fw:")):
+        base_subject = f"Fwd: {base_subject}"
+    fwd["Subject"] = f"{subject_prefix}{base_subject}"
+
+    header_block = "\n".join(
+        f"{name}: {value}"
+        for name in ("From", "Date", "Subject", "To")
+        if (value := original.get(name))
+    )
+    body_text = msg.plaintext_body or "(no readable body)"
+    fwd.set_content(
+        "---------- Forwarded message ----------\n"
+        f"{header_block}\n\n"
+        f"{body_text}\n"
+    )
+
+    raw_b64 = base64.urlsafe_b64encode(fwd.as_bytes()).decode("ascii")
+    service.users().messages().send(userId="me", body={"raw": raw_b64}).execute()
