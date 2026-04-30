@@ -1,6 +1,6 @@
 # recruiter-forwarder
 
-Forwards unsolicited tech-recruiter emails from my personal Gmail to a configurable recipient. Runs every 15 minutes via launchd. Classifies with Claude Haiku 4.5 via the Anthropic API.
+Forwards unsolicited tech-recruiter emails from my personal Gmail to a configurable recipient. Runs once a day at 2 PM via launchd. Classifies with Claude Haiku 4.5 via the Anthropic API.
 
 ## One-time setup
 

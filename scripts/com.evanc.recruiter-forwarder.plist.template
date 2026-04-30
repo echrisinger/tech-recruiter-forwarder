@@ -17,11 +17,15 @@
     <key>WorkingDirectory</key>
     <string>{{PROJECT_DIR}}</string>
 
-    <key>StartInterval</key>
-    <integer>900</integer>
-
-    <key>RunAtLoad</key>
-    <true/>
+    <!-- Daily at 2 PM local time. launchd fires the next missed run when the
+         Mac wakes if it was asleep at 14:00, so we don't need RunAtLoad. -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>14</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
 
     <key>StandardOutPath</key>
     <string>{{HOME}}/Library/Logs/recruiter-forwarder/forwarder.log</string>

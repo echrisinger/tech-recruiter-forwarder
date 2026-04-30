@@ -2,8 +2,9 @@
 recipient_emails = ["girlfriend@example.com"]
 
 # How far back to scan on each sweep. Should comfortably exceed the cron interval
-# so a missed run self-heals on the next sweep.
-lookback_hours = 1
+# so a missed run self-heals on the next sweep. Default 25 paired with the
+# bundled launchd plist (one run per day at 14:00).
+lookback_hours = 25
 
 # Gmail label applied to processed messages. Source of truth for dedup.
 gmail_label = "AutoForwarded"
