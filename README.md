@@ -22,13 +22,19 @@ Forwards unsolicited tech-recruiter emails from my personal Gmail to a configura
    # edit recipient_emails; leave dry_run=true for first run
    ```
 
-6. **Create secrets file**:
+6. **Create secrets file** with your Anthropic API key:
    ```bash
    cat > ~/.config/recruiter-forwarder/secrets.env <<'EOF'
-   ANTHROPIC_BASE_URL=https://your-gateway.example.com/
-   ANTHROPIC_AUTH_TOKEN=<your-gateway-token>
+   ANTHROPIC_API_KEY=sk-ant-...
    EOF
    chmod 600 ~/.config/recruiter-forwarder/secrets.env
+   ```
+
+   *Routing through a custom Anthropic-compatible gateway instead?* Set these two vars
+   instead of `ANTHROPIC_API_KEY` — the script will detect them and use Bearer auth:
+   ```
+   ANTHROPIC_BASE_URL=https://your-gateway.example.com/
+   ANTHROPIC_AUTH_TOKEN=<bearer-token>
    ```
 
 7. **Set up Gmail OAuth** (see `docs/superpowers/specs/2026-04-29-recruiter-email-forwarder-design.md` Task 4 for click-through). Place the downloaded JSON at:
@@ -74,7 +80,7 @@ Every successfully forwarded message gets the Gmail label `AutoForwarded`. The l
 ## Files
 
 - `~/.config/recruiter-forwarder/config.toml` — recipient list, lookback, dry_run.
-- `~/.config/recruiter-forwarder/secrets.env` — gateway URL + token.
+- `~/.config/recruiter-forwarder/secrets.env` — Anthropic API key (or gateway URL + token).
 - `~/.config/recruiter-forwarder/gmail_credentials.json` — OAuth client (downloaded once from GCP).
 - `~/.config/recruiter-forwarder/gmail_token.json` — refresh token (auto-managed).
 - `~/Library/Logs/recruiter-forwarder/forwarder.log` — rotated, 5MB cap.

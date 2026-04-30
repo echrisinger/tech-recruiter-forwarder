@@ -63,12 +63,15 @@ def load_secrets(path: Path = SECRETS_PATH) -> None:
     Lines starting with # are comments. Blank lines are ignored. Values are taken verbatim
     (no quote stripping); add quotes if your value needs them.
 
-    Required keys: ANTHROPIC_BASE_URL, ANTHROPIC_AUTH_TOKEN.
+    Required keys (one of):
+    - ANTHROPIC_API_KEY (for the public Anthropic API, the default)
+    - ANTHROPIC_BASE_URL + ANTHROPIC_AUTH_TOKEN (for a custom Anthropic-compatible gateway)
     """
     if not path.exists():
         raise ConfigError(
             f"Secrets file not found at {path}. "
-            f"Create it with ANTHROPIC_BASE_URL and ANTHROPIC_AUTH_TOKEN. chmod 600 it."
+            f"Create it with ANTHROPIC_API_KEY (or ANTHROPIC_BASE_URL+ANTHROPIC_AUTH_TOKEN "
+            f"for a custom gateway). chmod 600 it."
         )
 
     for line_no, raw in enumerate(path.read_text().splitlines(), 1):
@@ -80,6 +83,12 @@ def load_secrets(path: Path = SECRETS_PATH) -> None:
         key, _, value = line.partition("=")
         os.environ[key.strip()] = value.strip()
 
-    for required in ("ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN"):
-        if not os.environ.get(required):
-            raise ConfigError(f"{path} did not set {required}")
+    has_api_key = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    has_gateway = bool(
+        os.environ.get("ANTHROPIC_BASE_URL") and os.environ.get("ANTHROPIC_AUTH_TOKEN")
+    )
+    if not (has_api_key or has_gateway):
+        raise ConfigError(
+            f"{path} must set either ANTHROPIC_API_KEY (for the public Anthropic API) "
+            f"or ANTHROPIC_BASE_URL + ANTHROPIC_AUTH_TOKEN (for a custom gateway)."
+        )

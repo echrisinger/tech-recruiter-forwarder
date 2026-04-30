@@ -23,7 +23,7 @@ launchd (every 15 min)
         ├─ Gmail: list `newer_than:1h in:inbox -label:AutoForwarded`
         ├─ for each message:
         │    ├─ fetch headers + first ~500 chars of plaintext body
-        │    ├─ Claude Haiku 4.5 via Anthropic-compatible LLM gateway:
+        │    ├─ Claude Haiku 4.5 via Anthropic API (or custom gateway):
         │    │     "is this a tech recruiter outreach?" (tool-use → structured)
         │    └─ if yes:
         │          ├─ Gmail.users.messages.send (RFC 5322 forward to recipient)
@@ -48,11 +48,18 @@ dry_run = false
 forward_subject_prefix = ""                      # e.g. "[recruiter] "; default empty
 ```
 
-Secrets are NOT in TOML. They live in `~/.config/recruiter-forwarder/secrets.env`:
+Secrets are NOT in TOML. They live in `~/.config/recruiter-forwarder/secrets.env`. Either of:
+
+```
+# Direct Anthropic API (default)
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+or, for a custom Anthropic-compatible gateway:
 
 ```
 ANTHROPIC_BASE_URL=https://your-gateway.example.com/
-ANTHROPIC_AUTH_TOKEN=sk-...
+ANTHROPIC_AUTH_TOKEN=<bearer-token>
 ```
 
 The script loads `secrets.env` itself at startup with a small parser; the plist stays clean of secrets. (We considered putting them in the plist's `EnvironmentVariables` block, but that puts secrets into a launchctl-readable file outside our config dir.)
@@ -72,10 +79,9 @@ Thin wrapper over `google-api-python-client`. OAuth via the installed-app flow o
 Single Claude call per message:
 
 ```python
-client = Anthropic(
-    base_url=os.environ["ANTHROPIC_BASE_URL"],
-    auth_token=os.environ["ANTHROPIC_AUTH_TOKEN"],
-)
+# SDK reads ANTHROPIC_API_KEY by default; if ANTHROPIC_BASE_URL is set
+# we route through the gateway with bearer-token auth instead.
+client = Anthropic()
 response = client.messages.create(
     model="claude-haiku-4-5-20251001",
     max_tokens=200,

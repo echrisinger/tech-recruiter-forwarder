@@ -1,4 +1,4 @@
-"""Recruiter classifier: Anthropic SDK with tool-use via the Anthropic API."""
+"""Recruiter classifier: Anthropic SDK with tool-use."""
 
 from __future__ import annotations
 
@@ -66,10 +66,16 @@ def _format_email(from_header: str, subject: str, body: str) -> str:
 
 
 def make_client() -> Anthropic:
-    return Anthropic(
-        base_url=os.environ["ANTHROPIC_BASE_URL"],
-        auth_token=os.environ["ANTHROPIC_AUTH_TOKEN"],
-    )
+    """Construct an Anthropic client.
+
+    Defaults to the public Anthropic API (the SDK reads ANTHROPIC_API_KEY from env).
+    If ANTHROPIC_BASE_URL is set, routes through that endpoint instead and uses
+    ANTHROPIC_AUTH_TOKEN as a Bearer token — for proxies / corporate LLM gateways.
+    """
+    base_url = os.environ.get("ANTHROPIC_BASE_URL")
+    if base_url:
+        return Anthropic(base_url=base_url, auth_token=os.environ["ANTHROPIC_AUTH_TOKEN"])
+    return Anthropic()
 
 
 def classify(client: Anthropic, from_header: str, subject: str, body: str) -> RecruiterJudgment:
