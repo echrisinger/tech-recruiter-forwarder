@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.DS_Store
+# Local-only artifacts (real config + secrets live in ~/.config/recruiter-forwarder)
+local/
