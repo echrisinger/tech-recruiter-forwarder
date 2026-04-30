@@ -162,11 +162,13 @@ We will _not_ build a pytest suite for this project. Personal-script scope; dry-
 |---|---|
 | Gmail auth refresh fails | Log + exit non-zero. Launchd logs the failure; user re-runs OAuth flow manually. |
 | Anthropic / gateway 5xx | Log + skip the message (no label → retried on next sweep). |
-| Anthropic / gateway 4xx (auth) | Log + exit non-zero. Indicates rotated token; user updates `secrets.env`. |
+| Anthropic / gateway 4xx (auth) | Log + skip the message. (Will appear as repeated errors in the log until the token is rotated; visibility through the log is sufficient signal for a personal script.) |
 | Forward send fails | Log + skip the message (no label → retried). |
 | Label add fails after successful forward | Log warning. Next sweep may re-forward (acceptable). |
 | Malformed message body (no plaintext, no HTML) | Log + skip. |
-| Rate limited (429) | Linear backoff up to 3 attempts; if still failing, skip message. |
+| Rate limited (429) | Log + skip; relies on the next sweep for retry. The 15-min cadence + 1h lookback is the de-facto backoff. |
+
+The Anthropic and Google SDKs both perform their own internal retries on transient 5xx/429 (with backoff and jitter), so additional retry logic in our code would be redundant for the same scenarios.
 
 ## Project layout
 
@@ -194,5 +196,6 @@ We will _not_ build a pytest suite for this project. Personal-script scope; dry-
 ## Open issues / things to revisit
 
 - **Plaintext extraction quality.** Some recruiter emails are HTML-only with heavy inline styling. The MVP falls back to a naive `BeautifulSoup` strip; we'll see if that meaningfully degrades classification.
+- **Non-UTF-8 bodies.** `_decode_body` decodes parts as UTF-8 with `errors="replace"`. Recruiter agencies sending `charset=ISO-8859-1` or `windows-1252` will arrive at the classifier with replacement chars throughout the body, degrading signal. If we see misclassifications cluster on non-UTF-8 emails during the dry-run audit, switch to walking parts via `email.message_from_bytes(...)` and using each part's `get_content_charset()`.
 - **Recipient address discovery.** First-run UX: user has to know their girlfriend's email and put it in TOML. That's fine but could be improved with a one-time `--init` wizard later. Not in scope for MVP.
 - **Telemetry.** No counters/metrics emitted. If the script feels like a black box after a few weeks, add a daily summary line to the log: `today: N scanned, M flagged, K forwarded, J errors`.
