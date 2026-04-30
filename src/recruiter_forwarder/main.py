@@ -35,14 +35,18 @@ def setup_logging(verbose: bool) -> None:
     )
     file_handler.setFormatter(fmt)
 
-    stream_handler = logging.StreamHandler(sys.stderr)
-    stream_handler.setFormatter(fmt)
-
     root = logging.getLogger()
     root.setLevel(logging.DEBUG if verbose else logging.INFO)
     root.handlers.clear()
     root.addHandler(file_handler)
-    root.addHandler(stream_handler)
+
+    # Under launchd, stderr is captured to the same log file by StandardErrorPath,
+    # so a stderr stream handler would duplicate every line. Only attach one when
+    # stderr is a real terminal (interactive `uv run recruiter-forwarder -v`).
+    if sys.stderr.isatty():
+        stream_handler = logging.StreamHandler(sys.stderr)
+        stream_handler.setFormatter(fmt)
+        root.addHandler(stream_handler)
 
 
 def run(cfg: Config) -> int:
