@@ -1,0 +1,15 @@
+# Where forwarded recruiter emails should be sent. List, so multi-recipient is trivial.
+recipient_emails = ["girlfriend@example.com"]
+
+# How far back to scan on each sweep. Should comfortably exceed the cron interval
+# so a missed run self-heals on the next sweep.
+lookback_hours = 1
+
+# Gmail label applied to processed messages. Source of truth for dedup.
+gmail_label = "AutoForwarded"
+
+# When true, log "would forward..." but do not call forward/label APIs. Used during cutover.
+dry_run = true
+
+# Optional prefix prepended to forwarded subject lines, e.g. "[recruiter] ". Empty = no prefix.
+forward_subject_prefix = ""
